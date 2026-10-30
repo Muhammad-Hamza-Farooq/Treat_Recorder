@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TreatTracker
 
-## Getting Started
+Private social accountability for a friend group: every treat obligation stays tracked until it is genuinely fulfilled. Ignoring a request, delaying, or attending someone else’s outing never clears another person’s treat.
 
-First, run the development server:
+**Leader:** Hamza (`bscs23057@itu.edu.pk`)  
+**Access:** Invitation-only allowlist (see `src/config/allowed-members.ts`)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Next.js App Router · React · TypeScript · Tailwind
+- Supabase (PostgreSQL + Auth + RLS)
+- Resend · Axiom · Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Install**
 
-## Learn More
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Secrets**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   - Copy `.env.example` → `.env.local` (already created locally)
+   - Fill every `REPLACE_*` value
+   - Exact sources: **[SECRETS.md](./SECRETS.md)**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Run**
 
-## Deploy on Vercel
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   Open [http://localhost:3000](http://localhost:3000) → Dashboard shell at `/dashboard`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Docs
+
+| File | Purpose |
+|---|---|
+| [SECRETS.md](./SECRETS.md) | Where to get each API key |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design |
+| [DEVELOPMENT_CHECKLIST.md](./DEVELOPMENT_CHECKLIST.md) | Phase-by-phase progress |
+
+## Allowed members
+
+Hamza (leader), Adil Baig, Mehar Ali, Moeez Umer, Bilal Chaudhary, Abrar Ahmed, Wahaj Aziz, Emad Sohail, M. Abdullah.
+
+Emails use `<studentId>@itu.edu.pk` (`ALLOWED_EMAIL_DOMAIN`). Override in `.env.local` if needed.
+
+## Current status
+
+**Phase 1 (initialization)** — app shell, routes, env templates, member allowlist, Supabase client stubs.
+
+Next: **Phase 2** — database migrations, RLS, invitations, login.
