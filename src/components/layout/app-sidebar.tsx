@@ -13,11 +13,11 @@ function isActive(pathname: string, href: string) {
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
-  // Plain <a> avoids Next.js client-router caching a logged-out prefetch redirect
-  // (soft-nav to /calendar or /notifications then bouncing to /login).
+  // Soft navigation (fast) with prefetch off so logged-out redirects aren't cached.
   return (
-    <a
+    <Link
       href={item.href}
+      prefetch={false}
       className={cn(
         "flex items-center gap-2.5 rounded-full px-3 py-2.5 text-sm transition",
         isActive(pathname, item.href)
@@ -27,7 +27,7 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="truncate">{item.title}</span>
-    </a>
+    </Link>
   );
 }
 
@@ -72,7 +72,6 @@ export function AppSidebar({ isLeader = false, userName = "Member" }: NavProps) 
 
 export function MobileNav({ isLeader = false }: { isLeader?: boolean }) {
   const pathname = usePathname();
-  // Keep Calendar + Notifications on mobile; leaders also get first leader tools.
   const memberPrimary = MEMBER_NAV.filter((i) =>
     ["/dashboard", "/request-treat", "/treats", "/calendar", "/notifications"].includes(i.href)
   );

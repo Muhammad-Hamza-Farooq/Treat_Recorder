@@ -16,7 +16,7 @@ export default async function ReviewsPage() {
       .select("id, rating, comments, food_or_activity, recommended, created_at, reviewer:profiles!treat_reviews_reviewer_id_fkey(full_name)")
       .order("created_at", { ascending: false })
       .limit(50),
-    listObligations({ involving: me.id }),
+    listObligations(me.id, 50),
   ]);
 
   const { data: myReviews } = await supabase.from("treat_reviews").select("obligation_id").eq("reviewer_id", me.id);

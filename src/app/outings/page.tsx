@@ -18,7 +18,7 @@ export default async function OutingsPage() {
       .from("treat_events")
       .select("id, title, location, starts_at, timezone, organizer:profiles!treat_events_organizer_id_fkey(full_name)")
       .order("starts_at", { ascending: false }),
-    listObligations({ involving: me.id }),
+    listObligations(me.id, 50),
   ]);
 
   const linkable = owed.filter((o) => o.giver_id === me.id && SCHEDULABLE.includes(o.status));

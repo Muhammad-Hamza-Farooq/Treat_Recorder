@@ -70,3 +70,10 @@ export const OBLIGATION_SELECT =
   "giver:profiles!treat_obligations_giver_id_fkey(full_name), " +
   "requester:profiles!treat_obligations_requester_id_fkey(full_name), " +
   "request:treat_requests(reason, achievement_description, requested_treat, additional_notes)";
+
+/** Lighter select for list/calendar views (fewer joins/columns → faster queries). */
+export const OBLIGATION_LIST_SELECT =
+  "id, treat_request_id, giver_id, requester_id, status, scheduled_at, timezone, location, created_at, " +
+  "giver:profiles!treat_obligations_giver_id_fkey(full_name), " +
+  "requester:profiles!treat_obligations_requester_id_fkey(full_name), " +
+  "request:treat_requests(reason)";

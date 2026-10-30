@@ -30,7 +30,7 @@ function TreatList({ rows, meId, emptyText }: { rows: ObligationRow[]; meId: str
 
 export default async function TreatsPage() {
   const me = await requireProfile();
-  const mine = await listObligations({ involving: me.id });
+  const mine = await listObligations(me.id, 50);
 
   return (
     <AppShell

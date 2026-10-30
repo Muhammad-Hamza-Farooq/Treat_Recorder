@@ -1,6 +1,6 @@
 ﻿import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { CalendarView, type CalendarEvent } from "@/components/calendar/calendar-view";
+import { CalendarLazy, type CalendarEvent } from "@/components/calendar/calendar-lazy";
 import { Card, EmptyState, SectionTitle, StatusBadge } from "@/components/ui/primitives";
 import { requireProfile } from "@/lib/auth";
 import { listObligations } from "@/lib/queries";
@@ -12,7 +12,7 @@ export default async function CalendarPage() {
   const me = await requireProfile();
   const supabase = await createClient();
   const [obligations, { data: outings }] = await Promise.all([
-    listObligations(),
+    listObligations(undefined, 100),
     supabase.from("treat_events").select("id, title, starts_at"),
   ]);
 
@@ -42,7 +42,7 @@ export default async function CalendarPage() {
     <AppShell profile={me} title="Calendar" description="Everyone's scheduled treats and outings.">
       <div className="grid gap-6 lg:grid-cols-4">
         <Card className="lg:col-span-3">
-          <CalendarView events={events} />
+          <CalendarLazy events={events} />
         </Card>
         <Card className="h-fit">
           <SectionTitle>Unscheduled</SectionTitle>

@@ -8,7 +8,7 @@ import { isOpenStatus } from "@/lib/treat-workflow";
 
 export default async function DashboardPage() {
   const me = await requireProfile();
-  const mine = await listObligations({ involving: me.id });
+  const mine = await listObligations(me.id, 50);
 
   const owe = mine.filter((o) => o.giver_id === me.id && isOpenStatus(o.status));
   const owed = mine.filter((o) => o.requester_id === me.id && isOpenStatus(o.status));
