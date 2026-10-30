@@ -9,5 +9,7 @@ export async function GET(request: NextRequest) {
   if (request.nextUrl.searchParams.get("reason") === "no-access") {
     loginUrl.searchParams.set("message", "Your account has no active access. Ask Hamza for help.");
   }
-  return NextResponse.redirect(loginUrl);
+  const response = NextResponse.redirect(loginUrl);
+  response.headers.set("Cache-Control", "no-store, max-age=0");
+  return response;
 }

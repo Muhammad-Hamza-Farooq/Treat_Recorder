@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   description: "Friends who owe treats — tracked until they’re done.",
 };
 
+// Auth pages and gated routes must never be served from a static/RSC cache.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html

@@ -10,5 +10,12 @@ export function createClient() {
     );
   }
 
-  return createBrowserClient(url, anon);
+  return createBrowserClient(url, anon, {
+    cookieOptions: {
+      path: "/",
+      sameSite: "lax",
+      // Persist across browser restarts so navigating Calendar/Notifications keeps the session.
+      maxAge: 60 * 60 * 24 * 30,
+    },
+  });
 }

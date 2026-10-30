@@ -13,8 +13,10 @@ function isActive(pathname: string, href: string) {
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const Icon = item.icon;
+  // Plain <a> avoids Next.js client-router caching a logged-out prefetch redirect
+  // (soft-nav to /calendar or /notifications then bouncing to /login).
   return (
-    <Link
+    <a
       href={item.href}
       className={cn(
         "flex items-center gap-2.5 rounded-full px-3 py-2.5 text-sm transition",
@@ -25,7 +27,7 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="truncate">{item.title}</span>
-    </Link>
+    </a>
   );
 }
 
@@ -37,7 +39,7 @@ export function AppSidebar({ isLeader = false, userName = "Member" }: NavProps) 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-card/70 backdrop-blur">
       <div className="flex items-center justify-between px-5 py-5">
-        <Link href="/dashboard" className="font-heading text-xl tracking-tight">
+        <Link href="/dashboard" prefetch={false} className="font-heading text-xl tracking-tight">
           TreatTracker
         </Link>
         <ThemeToggle />
@@ -60,9 +62,9 @@ export function AppSidebar({ isLeader = false, userName = "Member" }: NavProps) 
       <div className="border-t border-border px-5 py-4">
         <p className="truncate text-sm font-medium">{userName}</p>
         <p className="text-xs text-muted">{isLeader ? "Leader" : "Member"}</p>
-        <Link href="/api/logout" className="mt-2 inline-block text-xs text-muted underline-offset-2 hover:underline">
+        <a href="/api/logout" className="mt-2 inline-block text-xs text-muted underline-offset-2 hover:underline">
           Sign out
-        </Link>
+        </a>
       </div>
     </aside>
   );
@@ -70,7 +72,16 @@ export function AppSidebar({ isLeader = false, userName = "Member" }: NavProps) 
 
 export function MobileNav({ isLeader = false }: { isLeader?: boolean }) {
   const pathname = usePathname();
-  const items = isLeader ? [...MEMBER_NAV.slice(0, 4), ...LEADER_NAV.slice(0, 2)] : MEMBER_NAV.slice(0, 5);
+  // Keep Calendar + Notifications on mobile; leaders also get first leader tools.
+  const memberPrimary = MEMBER_NAV.filter((i) =>
+    ["/dashboard", "/request-treat", "/treats", "/calendar", "/notifications"].includes(i.href)
+  );
+  const outings = MEMBER_NAV.find((i) => i.href === "/outings");
+  const items = isLeader
+    ? [...memberPrimary, ...LEADER_NAV.slice(0, 2)]
+    : outings
+      ? [...memberPrimary, outings]
+      : memberPrimary;
   return (
     <div className="border-b border-border px-3 py-2 md:hidden">
       <div className="flex gap-1 overflow-x-auto">

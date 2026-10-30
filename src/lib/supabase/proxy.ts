@@ -13,6 +13,19 @@ function isPublic(pathname: string) {
   );
 }
 
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie);
+  });
+}
+
+function noStore(response: NextResponse) {
+  // Prevent Next.js from caching auth redirects into the client router
+  // (prefetch of /calendar while logged out must not stick after login).
+  response.headers.set("Cache-Control", "no-store, max-age=0");
+  return response;
+}
+
 /** Refreshes the Supabase session cookies and gates non-public routes. */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -46,7 +59,9 @@ export async function updateSession(request: NextRequest) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.search = "";
-    return NextResponse.redirect(loginUrl);
+    const redirectResponse = noStore(NextResponse.redirect(loginUrl));
+    copyCookies(response, redirectResponse);
+    return redirectResponse;
   }
 
   // Already signed in — don't keep them on auth screens.
@@ -61,8 +76,10 @@ export async function updateSession(request: NextRequest) {
     const dash = request.nextUrl.clone();
     dash.pathname = "/dashboard";
     dash.search = "";
-    return NextResponse.redirect(dash);
+    const redirectResponse = noStore(NextResponse.redirect(dash));
+    copyCookies(response, redirectResponse);
+    return redirectResponse;
   }
 
-  return response;
+  return noStore(response);
 }

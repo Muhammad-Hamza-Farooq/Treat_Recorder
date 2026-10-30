@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export type Profile = {
   id: string;
@@ -19,11 +19,11 @@ export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (error || !user) return null;
 
-  // Service role after auth check — avoids RLS edge cases that bounce users back to login.
-  const { createServiceClient } = await import("@/lib/supabase/server");
+  // Service role after auth check — avoids RLS edge cases that bounce users to login.
   const { data } = await createServiceClient()
     .from("profiles")
     .select(PROFILE_COLUMNS)
@@ -34,10 +34,14 @@ export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   return data as Profile;
 });
 
-/** Page guard: signed-in active member, else send to logout/login. */
+/**
+ * Page guard: signed-in active member.
+ * Does NOT sign the user out — wiping the session on a transient profile miss
+ * was causing "click Calendar → back at Sign in".
+ */
 export async function requireProfile(): Promise<Profile> {
   const profile = await getCurrentProfile();
-  if (!profile) redirect("/api/logout?reason=no-access");
+  if (!profile) redirect("/login?message=Please sign in to continue.");
   return profile;
 }
 
