@@ -14,6 +14,7 @@ export function createClient() {
     cookieOptions: {
       path: "/",
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
       // Persist across browser restarts so navigating Calendar/Notifications keeps the session.
       maxAge: 60 * 60 * 24 * 30,
     },

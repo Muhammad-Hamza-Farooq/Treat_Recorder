@@ -32,7 +32,16 @@ export async function updateSession(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) return response;
+  // Fail closed: never serve gated routes if auth config is missing.
+  if (!url || !anon) {
+    if (!isPublic(request.nextUrl.pathname)) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.search = "";
+      return noStore(NextResponse.redirect(loginUrl));
+    }
+    return response;
+  }
 
   const supabase = createServerClient(url, anon, {
     cookies: {
