@@ -1,12 +1,5 @@
-﻿import { PlaceholderPage } from "@/components/layout/placeholder-page";
+﻿import { redirect } from "next/navigation";
 
-export default function Page() {
-  return (
-    <PlaceholderPage
-      title="Register"
-      description="Public registration is closed. Use an invitation link."
-      phase="Phase 2"
-      isLeader={false}
-    />
-  );
+export default function RegisterPage() {
+  redirect("/login?message=Registration is invitation-only. Ask Hamza for an invite link.");
 }

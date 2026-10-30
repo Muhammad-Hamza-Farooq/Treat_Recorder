@@ -2,57 +2,82 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LEADER_NAV, MEMBER_NAV } from "@/config/navigation";
+import { LEADER_NAV, MEMBER_NAV, type NavItem } from "@/config/navigation";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
-type AppSidebarProps = {
-  isLeader?: boolean;
-  userName?: string;
-};
+function isActive(pathname: string, href: string) {
+  const base = href.split("?")[0];
+  return pathname === base || (base !== "/dashboard" && pathname.startsWith(`${base}/`));
+}
 
-export function AppSidebar({ isLeader = false, userName = "Member" }: AppSidebarProps) {
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex items-center gap-2.5 rounded-full px-3 py-2.5 text-sm transition",
+        isActive(pathname, item.href)
+          ? "bg-accent text-accent-foreground"
+          : "text-muted hover:bg-accent-soft hover:text-foreground"
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="truncate">{item.title}</span>
+    </Link>
+  );
+}
+
+type NavProps = { isLeader?: boolean; userName?: string };
+
+export function AppSidebar({ isLeader = false, userName = "Member" }: NavProps) {
   const pathname = usePathname();
-  const items = isLeader ? [...MEMBER_NAV, ...LEADER_NAV] : MEMBER_NAV;
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-stone-200 bg-[#FAFAF8]">
-      <div className="border-b border-stone-200 px-5 py-5">
-        <Link href="/dashboard" className="block">
-          <p className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-tight text-stone-900">
-            TreatTracker
-          </p>
-          <p className="mt-0.5 text-xs text-stone-500">Nobody escapes a treat</p>
+    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-card/70 backdrop-blur">
+      <div className="flex items-center justify-between px-5 py-5">
+        <Link href="/dashboard" className="font-heading text-xl tracking-tight">
+          TreatTracker
+        </Link>
+        <ThemeToggle />
+      </div>
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
+        {MEMBER_NAV.map((item) => (
+          <NavLink key={item.href + item.title} item={item} pathname={pathname} />
+        ))}
+        {isLeader ? (
+          <>
+            <p className="px-3 pb-1 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+              Leader
+            </p>
+            {LEADER_NAV.map((item) => (
+              <NavLink key={item.href + item.title} item={item} pathname={pathname} />
+            ))}
+          </>
+        ) : null}
+      </nav>
+      <div className="border-t border-border px-5 py-4">
+        <p className="truncate text-sm font-medium">{userName}</p>
+        <p className="text-xs text-muted">{isLeader ? "Leader" : "Member"}</p>
+        <Link href="/api/logout" className="mt-2 inline-block text-xs text-muted underline-offset-2 hover:underline">
+          Sign out
         </Link>
       </div>
-
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-        {items.map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href.split("?")[0]));
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href + item.title}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                active
-                  ? "bg-teal-700 text-white shadow-sm"
-                  : "text-stone-700 hover:bg-stone-100"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0 opacity-90" />
-              <span className="truncate">{item.title}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-stone-200 px-4 py-4">
-        <p className="truncate text-sm font-medium text-stone-900">{userName}</p>
-        <p className="text-xs text-stone-500">{isLeader ? "Leader" : "Member"}</p>
-      </div>
     </aside>
+  );
+}
+
+export function MobileNav({ isLeader = false }: { isLeader?: boolean }) {
+  const pathname = usePathname();
+  const items = isLeader ? [...MEMBER_NAV.slice(0, 4), ...LEADER_NAV.slice(0, 2)] : MEMBER_NAV.slice(0, 5);
+  return (
+    <div className="border-b border-border px-3 py-2 md:hidden">
+      <div className="flex gap-1 overflow-x-auto">
+        {items.map((item) => (
+          <NavLink key={item.href + item.title} item={item} pathname={pathname} />
+        ))}
+      </div>
+    </div>
   );
 }

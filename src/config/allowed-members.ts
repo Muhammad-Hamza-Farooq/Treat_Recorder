@@ -27,7 +27,8 @@ export const ALLOWED_MEMBERS: readonly AllowedMember[] = [
 export const LEADER_STUDENT_ID = "bscs23057";
 
 export function getAllowedEmailDomain(): string {
-  return (process.env.ALLOWED_EMAIL_DOMAIN ?? "itu.edu.pk").toLowerCase();
+  // Hard-locked for this group
+  return "itu.edu.pk";
 }
 
 export function memberEmail(studentId: string, domain = getAllowedEmailDomain()): string {

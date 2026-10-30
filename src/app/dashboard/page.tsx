@@ -1,99 +1,86 @@
-import { AppShell } from "@/components/layout/app-shell";
-import { EnvStatusCard } from "@/components/setup/env-status-card";
-import { TREAT_STATUS_COLORS, TREAT_STATUS_LABELS, TREAT_STATUSES } from "@/types/treat";
 import Link from "next/link";
+import { AppShell } from "@/components/layout/app-shell";
+import { Card, EmptyState, LinkButton, SectionTitle, StatusBadge } from "@/components/ui/primitives";
+import { requireProfile } from "@/lib/auth";
+import { formatDateTime } from "@/lib/datetime";
+import { listObligations } from "@/lib/queries";
+import { isOpenStatus } from "@/lib/treat-workflow";
 
-const PLACEHOLDER_STATS = [
-  { label: "Treats I owe", value: "—" },
-  { label: "Treats owed to me", value: "—" },
-  { label: "Pending requests", value: "—" },
-  { label: "Unscheduled", value: "—" },
-  { label: "Scheduled", value: "—" },
-  { label: "Delayed", value: "—" },
-  { label: "In progress", value: "—" },
-  { label: "Completed", value: "—" },
-  { label: "Overdue", value: "—" },
-];
+export default async function DashboardPage() {
+  const me = await requireProfile();
+  const mine = await listObligations({ involving: me.id });
 
-export default function DashboardPage() {
+  const owe = mine.filter((o) => o.giver_id === me.id && isOpenStatus(o.status));
+  const owed = mine.filter((o) => o.requester_id === me.id && isOpenStatus(o.status));
+  const awaiting = owe.filter((o) => o.status === "PENDING");
+  const completed = mine.filter((o) => o.status === "COMPLETED");
+  const upcoming = mine
+    .filter((o) => o.scheduled_at && isOpenStatus(o.status) && new Date(o.scheduled_at) > new Date())
+    .sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!))
+    .slice(0, 3);
+
+  const stats = [
+    { label: "I owe", value: owe.length },
+    { label: "Owed to me", value: owed.length },
+    { label: "Awaiting my reply", value: awaiting.length },
+    { label: "Completed", value: completed.length },
+  ];
+
   return (
     <AppShell
-      title="Dashboard"
-      description="Live counts will come from PostgreSQL after Phase 2 auth + schema. Shell and navigation are ready now."
-      isLeader
-      userName="Hamza (Leader)"
-      actions={
-        <Link
-          href="/request-treat"
-          className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
-        >
-          Request a Treat
-        </Link>
-      }
+      profile={me}
+      title={`Hi, ${me.full_name.split(" ")[0]}`}
+      description="Where your treats stand right now."
+      actions={<LinkButton href="/request-treat">Request a treat</LinkButton>}
     >
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {PLACEHOLDER_STATS.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
-              >
-                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                  {stat.label}
-                </p>
-                <p className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-stone-900">
-                  {stat.value}
-                </p>
-              </div>
-            ))}
-          </section>
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {stats.map((s) => (
+            <Card key={s.label} className="p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">{s.label}</p>
+              <p className="mt-2 font-heading text-3xl font-semibold">{s.value}</p>
+            </Card>
+          ))}
+        </div>
 
-          <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-            <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold">
-              Status legend
-            </h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Used across calendar, tables, and obligation cards.
-            </p>
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {TREAT_STATUSES.map((status) => (
-                <li key={status} className="flex items-center gap-2 text-sm text-stone-700">
-                  <span
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: TREAT_STATUS_COLORS[status] }}
-                  />
-                  {TREAT_STATUS_LABELS[status]}
+        <Card>
+          <SectionTitle>Coming up</SectionTitle>
+          {upcoming.length === 0 ? (
+            <EmptyState>Nothing scheduled yet.</EmptyState>
+          ) : (
+            <ul className="divide-y divide-border">
+              {upcoming.map((o) => (
+                <li key={o.id} className="flex items-center justify-between gap-3 py-3">
+                  <Link href={`/treats/${o.id}`} className="min-w-0 hover:text-accent">
+                    <p className="truncate text-sm font-medium">
+                      {o.giver_id === me.id ? `You owe ${o.requester?.full_name}` : `${o.giver?.full_name} owes you`}
+                    </p>
+                    <p className="text-xs text-muted">{formatDateTime(o.scheduled_at, me.timezone)}</p>
+                  </Link>
+                  <StatusBadge status={o.status} />
                 </li>
               ))}
             </ul>
-          </section>
+          )}
+        </Card>
 
-          <section className="rounded-2xl border border-dashed border-stone-300 bg-white/60 p-5">
-            <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold">
-              Quick actions
-            </h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[
-                ["/request-treat", "Request a Treat"],
-                ["/calendar", "View Calendar"],
-                ["/treats", "My Treats"],
-                ["/notifications", "Notifications"],
-                ["/leader", "Leader Admin"],
-              ].map(([href, label]) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 hover:border-teal-600 hover:text-teal-800"
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </section>
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["/treats", "My treats"],
+            ["/calendar", "Calendar"],
+            ["/outings", "Outings"],
+            ["/reviews", "Reviews"],
+            ["/activity", "Activity"],
+          ].map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm transition hover:border-accent hover:text-accent"
+            >
+              {label}
+            </Link>
+          ))}
         </div>
-
-        <EnvStatusCard />
       </div>
     </AppShell>
   );

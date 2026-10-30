@@ -1,30 +1,22 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { Card } from "@/components/ui/primitives";
+import { requireProfile } from "@/lib/auth";
 
 type PlaceholderPageProps = {
   title: string;
   description: string;
-  phase: string;
-  isLeader?: boolean;
 };
 
-export function PlaceholderPage({
-  title,
-  description,
-  phase,
-  isLeader = false,
-}: PlaceholderPageProps) {
+export async function PlaceholderPage({ title, description }: PlaceholderPageProps) {
+  const profile = await requireProfile();
   return (
-    <AppShell title={title} description={description} isLeader={isLeader} userName="Hamza (Leader)">
-      <div className="rounded-2xl border border-dashed border-stone-300 bg-white/70 p-8 text-center shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wider text-teal-700">{phase}</p>
-        <h2 className="mt-2 font-[family-name:var(--font-display)] text-xl font-semibold text-stone-900">
-          Route ready — feature wired in {phase}
-        </h2>
-        <p className="mx-auto mt-2 max-w-lg text-sm text-stone-600">
-          This page is part of the app shell. Real data, auth, and actions land in the phase above —
-          no mock arrays pretending to be production.
+    <AppShell profile={profile} title={title} description={description}>
+      <Card className="p-10 text-center">
+        <p className="font-heading text-3xl italic">Coming together</p>
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted">
+          This screen is wired into the shell. Feature work continues phase by phase.
         </p>
-      </div>
+      </Card>
     </AppShell>
   );
 }
