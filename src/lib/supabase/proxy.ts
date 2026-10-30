@@ -2,7 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Routes reachable without a session. Everything else requires login. */
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/forgot-password", "/accept-invitation", "/register"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+  "/setup",
+  "/forgot-password",
+  "/accept-invitation",
+  "/register",
+];
 
 function isPublic(pathname: string) {
   return (
@@ -78,6 +86,7 @@ export async function updateSession(request: NextRequest) {
     user &&
     (pathname === "/login" ||
       pathname === "/signup" ||
+      pathname === "/setup" ||
       pathname === "/forgot-password" ||
       pathname === "/register" ||
       pathname === "/")

@@ -28,12 +28,37 @@ export async function createInvite(_prev: ActionState, formData: FormData): Prom
       metadata: { email: invite.email, emailResult: invite.emailResult },
     });
     revalidatePath("/leader/invitations");
-    const emailNote =
-      invite.emailResult === "sent" ? "Email sent." : `Email not sent (${invite.emailResult}) — share the link yourself.`;
-    return { success: `Invitation for ${invite.email}. ${emailNote} Link (shown once): ${invite.link}` };
+    return {
+      success: `Code for ${invite.email}: ${invite.setupCode} — share it (or the code link). Email: ${invite.emailResult}.`,
+    };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Could not create the invitation." };
   }
+}
+
+/** Create/refresh one-time setup codes for every allowlisted member who cannot log in yet. */
+export async function generateAllSetupCodes(_formData: FormData): Promise<void> {
+  const leader = await requireLeader();
+  const db = createServiceClient();
+  const { data: profiles } = await db.from("profiles").select("email, auth_user_id, full_name");
+  const needSetup = (profiles ?? []).filter((p) => !p.auth_user_id && isAllowedEmail(p.email));
+
+  for (const p of needSetup) {
+    try {
+      const invite = await createInvitation(p.email, leader.id);
+      await writeAudit({
+        actorId: leader.id,
+        eventType: "invitation.created",
+        entityType: "invitation",
+        entityId: invite.invitationId,
+        metadata: { email: invite.email, setupCode: invite.setupCode, bulk: true },
+      });
+    } catch (e) {
+      console.error("bulk invite failed", p.email, e);
+    }
+  }
+
+  revalidatePath("/leader/invitations");
 }
 
 export async function revokeInvite(formData: FormData): Promise<void> {

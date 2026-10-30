@@ -5,7 +5,7 @@ import { z } from "zod";
 import { findAllowedMemberByEmail, getAllowedEmailDomain } from "@/config/allowed-members";
 import type { ActionState } from "@/components/ui/action-form";
 import { writeAudit } from "@/lib/audit";
-import { findUsableInvitation } from "@/lib/invitations";
+import { findUsableInvitation, findUsableInvitationByCode } from "@/lib/invitations";
 import { recordLoginDevice } from "@/lib/security";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
@@ -71,9 +71,14 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
 
 const acceptSchema = z
   .object({
-    token: z.string().min(20),
+    token: z.string().optional(),
+    code: z.string().optional(),
     password: z.string().min(6, "Use at least 6 characters.").max(72),
     confirm: z.string(),
+  })
+  .refine((v) => Boolean(v.token?.length || v.code?.trim()), {
+    message: "Missing invitation token or setup code.",
+    path: ["token"],
   })
   .refine((v) => v.password === v.confirm, { message: "Passwords do not match.", path: ["confirm"] });
 
@@ -94,7 +99,7 @@ export async function requestPasswordSetup(
   const email = parsed.data.email;
 
   const generic =
-    "If that email is on the allowlist, we sent an invitation link to set your password. Check your inbox.";
+    "Ask Hamza for your one-time setup code (email sending is limited without a custom domain). Enter it at Setup with code.";
 
   if (!email.endsWith(`@${getAllowedEmailDomain()}`)) {
     return { success: generic };
@@ -111,11 +116,11 @@ export async function requestPasswordSetup(
       eventType: "auth.password_setup_requested",
       entityType: "invitation",
       entityId: invite.invitationId,
-      metadata: { email, emailResult: invite.emailResult },
+      metadata: { email, emailResult: invite.emailResult, setupCode: invite.setupCode },
     });
   } catch (error) {
     console.error("password setup invite failed", error);
-    return { error: "Could not send the setup email. Try again in a moment." };
+    return { error: "Could not create a setup code. Ask Hamza for help." };
   }
 
   return { success: generic };
@@ -124,9 +129,13 @@ export async function requestPasswordSetup(
 export async function acceptInvitation(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = acceptSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const { token, password } = parsed.data;
+  const { token, code, password } = parsed.data;
 
-  const invitation = await findUsableInvitation(token);
+  const invitation = token
+    ? await findUsableInvitation(token)
+    : code
+      ? await findUsableInvitationByCode(code)
+      : null;
   if (!invitation) return { error: "This invitation is invalid, expired, or already used." };
 
   const member = findAllowedMemberByEmail(invitation.email);
@@ -177,7 +186,11 @@ export async function acceptInvitation(_prev: ActionState, formData: FormData): 
 
   await db
     .from("invitations")
-    .update({ status: "accepted", accepted_at: new Date().toISOString() })
+    .update({
+      status: "accepted",
+      accepted_at: new Date().toISOString(),
+      setup_code: null,
+    })
     .eq("id", invitation.id);
   await writeAudit({
     actorId: profileId,

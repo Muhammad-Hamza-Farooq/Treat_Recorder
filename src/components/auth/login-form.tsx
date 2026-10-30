@@ -101,9 +101,9 @@ export function LoginForm() {
       </button>
       <div className="space-y-2 text-center text-sm text-muted">
         <p>
-          No password yet?{" "}
-          <Link href="/signup" className="text-accent hover:underline">
-            Sign up
+          Got a setup code from Hamza?{" "}
+          <Link href="/setup" className="text-accent hover:underline">
+            Enter code
           </Link>
         </p>
         <p>
