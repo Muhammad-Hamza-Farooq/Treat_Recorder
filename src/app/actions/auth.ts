@@ -94,7 +94,7 @@ export async function requestPasswordSetup(
   const email = parsed.data.email;
 
   const generic =
-    "If that email is on the allowlist, we sent a link to set your password. Check your inbox.";
+    "If that email is on the allowlist, we sent an invitation link to set your password. Check your inbox.";
 
   if (!email.endsWith(`@${getAllowedEmailDomain()}`)) {
     return { success: generic };

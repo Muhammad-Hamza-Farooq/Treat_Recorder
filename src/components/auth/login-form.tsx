@@ -47,7 +47,7 @@ export function LoginForm() {
         return;
       }
 
-      // Full navigation so the proxy sees the new session cookies.
+      // Full navigation so the proxy sees cookies and the browser can offer to save the password.
       window.location.assign("/dashboard");
     } catch {
       setError("Something went wrong. Try again.");
@@ -56,15 +56,13 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
+    <form onSubmit={onSubmit} className="space-y-4" method="post">
       <Field label="Email">
         <input
           name="email"
           type="email"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="none"
-          spellCheck={false}
+          autoComplete="username"
+          inputMode="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -101,12 +99,19 @@ export function LoginForm() {
       <button type="submit" disabled={loading} className={cn(buttonClass, "w-full")}>
         {loading ? "Signing in…" : "Sign in"}
       </button>
-      <p className="text-center text-sm text-muted">
-        First time?{" "}
-        <Link href="/forgot-password" className="text-accent hover:underline">
-          Enter your email to get a setup link
-        </Link>
-      </p>
+      <div className="space-y-2 text-center text-sm text-muted">
+        <p>
+          No password yet?{" "}
+          <Link href="/signup" className="text-accent hover:underline">
+            Sign up
+          </Link>
+        </p>
+        <p>
+          <Link href="/forgot-password" className="hover:text-accent hover:underline">
+            Forgot password?
+          </Link>
+        </p>
+      </div>
     </form>
   );
 }

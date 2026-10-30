@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Routes reachable without a session. Everything else requires login. */
-const PUBLIC_PATHS = ["/", "/login", "/forgot-password", "/accept-invitation", "/register"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/forgot-password", "/accept-invitation", "/register"];
 
 function isPublic(pathname: string) {
   return (
@@ -50,7 +50,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Already signed in — don't keep them on auth screens.
-  if (user && (pathname === "/login" || pathname === "/forgot-password" || pathname === "/")) {
+  if (
+    user &&
+    (pathname === "/login" ||
+      pathname === "/signup" ||
+      pathname === "/forgot-password" ||
+      pathname === "/register" ||
+      pathname === "/")
+  ) {
     const dash = request.nextUrl.clone();
     dash.pathname = "/dashboard";
     dash.search = "";
