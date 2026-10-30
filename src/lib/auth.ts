@@ -22,7 +22,9 @@ export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  // Service role after auth check — avoids RLS edge cases that bounce users back to login.
+  const { createServiceClient } = await import("@/lib/supabase/server");
+  const { data } = await createServiceClient()
     .from("profiles")
     .select(PROFILE_COLUMNS)
     .eq("auth_user_id", user.id)

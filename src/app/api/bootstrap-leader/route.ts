@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
 
   const password = process.env.SEED_LEADER_PASSWORD;
   if (password) {
-    if (password.length < 8) {
-      return NextResponse.json({ error: "SEED_LEADER_PASSWORD must be at least 8 characters." }, { status: 500 });
+    if (password.length < 6) {
+      return NextResponse.json({ error: "SEED_LEADER_PASSWORD must be at least 6 characters." }, { status: 500 });
     }
     const { data: created, error } = await db.auth.admin.createUser({
       email,

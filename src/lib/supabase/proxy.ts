@@ -49,5 +49,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Already signed in — don't keep them on auth screens.
+  if (user && (pathname === "/login" || pathname === "/forgot-password" || pathname === "/")) {
+    const dash = request.nextUrl.clone();
+    dash.pathname = "/dashboard";
+    dash.search = "";
+    return NextResponse.redirect(dash);
+  }
+
   return response;
 }

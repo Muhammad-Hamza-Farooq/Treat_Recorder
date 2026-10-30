@@ -81,10 +81,11 @@ export async function createInvitation(
     idempotencyKey: `invite:${data.id}`,
     to: normalized,
     template: "invitation",
-    subject: "You're invited to TreatTracker",
+    subject: "Set your TreatTracker password",
     html: `<p>Hi ${escapeHtml(member.fullName)},</p>
-<p>You've been invited to TreatTracker. Set your password to join:</p>
-<p><a href="${link}">${link}</a></p>
+<p>Use this link to set (or reset) your TreatTracker password:</p>
+<p><a href="${link}">Set my password</a></p>
+<p>Or copy: ${escapeHtml(link)}</p>
 <p>This link expires in ${days} days and can be used once.</p>`,
   });
 

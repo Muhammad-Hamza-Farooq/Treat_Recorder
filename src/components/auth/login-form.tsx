@@ -1,13 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
+import { finalizeLogin } from "@/app/actions/auth";
 import { createClient } from "@/lib/supabase/client";
+import { buttonClass, Field, inputClass } from "@/components/ui/primitives";
+import { cn } from "@/lib/utils";
 
-export function LoginForm({ nextPath }: { nextPath: string }) {
-  const router = useRouter();
+export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +22,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
 
     const normalized = email.trim().toLowerCase();
     if (!normalized.endsWith("@itu.edu.pk")) {
-      setError("Only @itu.edu.pk emails can sign in.");
+      setError("Use your @itu.edu.pk email.");
       setLoading(false);
       return;
     }
@@ -30,12 +34,21 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         password,
       });
       if (signError) {
-        setError("Could not sign in. Check your email and password.");
+        setError("Incorrect email or password.");
         setLoading(false);
         return;
       }
-      router.push(nextPath);
-      router.refresh();
+
+      const result = await finalizeLogin();
+      if (result?.error) {
+        await supabase.auth.signOut();
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      // Full navigation so the proxy sees the new session cookies.
+      window.location.assign("/dashboard");
     } catch {
       setError("Something went wrong. Try again.");
       setLoading(false);
@@ -43,46 +56,57 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <label className="mb-1.5 block text-sm text-[var(--muted)]">Email</label>
+    <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
+      <Field label="Email">
         <input
-          className="input-field"
+          name="email"
           type="email"
-          autoComplete="email"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="bscs23057@itu.edu.pk"
+          placeholder="you@itu.edu.pk"
+          className={inputClass}
         />
-      </div>
-      <div>
-        <label className="mb-1.5 block text-sm text-[var(--muted)]">Password</label>
-        <input
-          className="input-field"
-          type="password"
-          autoComplete="current-password"
-          required
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-      {error ? <p className="text-sm text-red-500">{error}</p> : null}
-      <button type="submit" className="btn-primary w-full" disabled={loading}>
+      </Field>
+      <Field label="Password">
+        <div className="relative">
+          <input
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={cn(inputClass, "pr-10")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-foreground"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </Field>
+      {error ? (
+        <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+      <button type="submit" disabled={loading} className={cn(buttonClass, "w-full")}>
         {loading ? "Signing in…" : "Sign in"}
       </button>
-      <Linkish />
+      <p className="text-center text-sm text-muted">
+        First time?{" "}
+        <Link href="/forgot-password" className="text-accent hover:underline">
+          Enter your email to get a setup link
+        </Link>
+      </p>
     </form>
-  );
-}
-
-function Linkish() {
-  return (
-    <p className="text-center text-xs text-[var(--muted)]">
-      <a href="/forgot-password" className="underline-offset-2 hover:underline">
-        Forgot password?
-      </a>
-    </p>
   );
 }

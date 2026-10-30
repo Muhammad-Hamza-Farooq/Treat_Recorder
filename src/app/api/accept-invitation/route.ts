@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const token = typeof body?.token === "string" ? body.token : "";
   const password = typeof body?.password === "string" ? body.password : "";
 
-  if (!token || password.length < 8) {
+  if (!token || password.length < 6) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 

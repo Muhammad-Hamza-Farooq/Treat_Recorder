@@ -14,6 +14,33 @@ const loginSchema = z.object({
   password: z.string().min(1, "Enter your password."),
 });
 
+/**
+ * After browser sign-in, verify the member profile and record the device.
+ * Session cookies are set by the browser client — this only validates access.
+ */
+export async function finalizeLogin(): Promise<ActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign-in did not stick. Try again." };
+
+  const { data: profile } = await createServiceClient()
+    .from("profiles")
+    .select("id, full_name, email, account_status")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  if (!profile || profile.account_status !== "active") {
+    await supabase.auth.signOut();
+    return { error: "Your account is not active. Ask Hamza for help." };
+  }
+
+  await recordLoginDevice(profile);
+  return { success: "ok" };
+}
+
+/** @deprecated Prefer client LoginForm + finalizeLogin (reliable cookies). */
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -45,10 +72,54 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
 const acceptSchema = z
   .object({
     token: z.string().min(20),
-    password: z.string().min(8, "Use at least 8 characters.").max(72),
+    password: z.string().min(6, "Use at least 6 characters.").max(72),
     confirm: z.string(),
   })
   .refine((v) => v.password === v.confirm, { message: "Passwords do not match.", path: ["confirm"] });
+
+const setupEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter your ITU email."),
+});
+
+/**
+ * Member enters only their allowlisted email → we email a one-time link to set a password.
+ * Always returns a generic success message (no account enumeration).
+ */
+export async function requestPasswordSetup(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const parsed = setupEmailSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const email = parsed.data.email;
+
+  const generic =
+    "If that email is on the allowlist, we sent a link to set your password. Check your inbox.";
+
+  if (!email.endsWith(`@${getAllowedEmailDomain()}`)) {
+    return { success: generic };
+  }
+
+  const member = findAllowedMemberByEmail(email);
+  if (!member) return { success: generic };
+
+  try {
+    const { createInvitation } = await import("@/lib/invitations");
+    const invite = await createInvitation(email, null);
+    await writeAudit({
+      actorId: null,
+      eventType: "auth.password_setup_requested",
+      entityType: "invitation",
+      entityId: invite.invitationId,
+      metadata: { email, emailResult: invite.emailResult },
+    });
+  } catch (error) {
+    console.error("password setup invite failed", error);
+    return { error: "Could not send the setup email. Try again in a moment." };
+  }
+
+  return { success: generic };
+}
 
 export async function acceptInvitation(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = acceptSchema.safeParse(Object.fromEntries(formData));
